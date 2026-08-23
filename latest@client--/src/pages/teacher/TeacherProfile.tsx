@@ -26,11 +26,11 @@ interface Profile {
 }
 
 export default function TeacherProfile() {
-  const [profile, setProfile] =
-    useState<Profile | null>(null);
+  const [name, setName] =
+    useState("");
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] =
+    useState("");
 
   const [selectedImage, setSelectedImage] =
     useState<File | null>(null);
@@ -91,7 +91,7 @@ export default function TeacherProfile() {
         response.data
       );
 
-      const user =
+      const user: Profile | undefined =
         response.data?.data;
 
       if (!user) {
@@ -99,8 +99,6 @@ export default function TeacherProfile() {
           "Profile data was not returned by the server."
         );
       }
-
-      setProfile(user);
 
       setName(user.name || "");
       setEmail(user.email || "");
@@ -110,6 +108,7 @@ export default function TeacherProfile() {
           user.profileImage
         )
       );
+
     } catch (error: any) {
       console.error(
         "LOAD TEACHER PROFILE ERROR:",
@@ -121,6 +120,7 @@ export default function TeacherProfile() {
           error.message ||
           "Failed to load profile."
       );
+
     } finally {
       setLoading(false);
     }
@@ -227,7 +227,9 @@ export default function TeacherProfile() {
         response.data
       );
 
-      const updatedUser =
+      const updatedUser:
+        | Profile
+        | undefined =
         response.data?.data;
 
       if (!updatedUser) {
@@ -235,8 +237,6 @@ export default function TeacherProfile() {
           "Server did not return updated profile."
         );
       }
-
-      setProfile(updatedUser);
 
       setName(
         updatedUser.name || ""
@@ -263,6 +263,7 @@ export default function TeacherProfile() {
         response.data?.message ||
           "Profile picture updated successfully."
       );
+
     } catch (error: any) {
       console.error(
         "UPLOAD PROFILE IMAGE ERROR:",
@@ -284,6 +285,7 @@ export default function TeacherProfile() {
           error.message ||
           "Failed to upload profile picture."
       );
+
     } finally {
       setUploading(false);
     }
@@ -292,143 +294,176 @@ export default function TeacherProfile() {
   // =====================================================
   // UPDATE NAME + EMAIL
   // =====================================================
-const handleSubmit = async (
-  e: FormEvent<HTMLFormElement>
-) => {
-  e.preventDefault();
 
-  setError("");
-  setSuccess("");
+  const handleSubmit = async (
+    e: FormEvent<HTMLFormElement>
+  ) => {
+    e.preventDefault();
 
-  if (!name.trim()) {
-    setError("Name is required.");
-    return;
-  }
+    setError("");
+    setSuccess("");
 
-  if (!email.trim()) {
-    setError("Email is required.");
-    return;
-  }
-
-  try {
-    setSaving(true);
-
-    // ==========================================
-    // 1. UPDATE NAME + EMAIL
-    // ==========================================
-
-    const profileResponse =
-      await api.put(
-        "/user/profile",
-        {
-          name: name.trim(),
-          email: email.trim(),
-        }
+    if (!name.trim()) {
+      setError(
+        "Name is required."
       );
+      return;
+    }
 
-    console.log(
-      "PROFILE UPDATE RESPONSE:",
-      profileResponse.data
-    );
-
-    // ==========================================
-    // 2. UPLOAD IMAGE IF SELECTED
-    // ==========================================
-
-    if (selectedImage) {
-      const formData =
-        new FormData();
-
-      formData.append(
-        "profileImage",
-        selectedImage
+    if (!email.trim()) {
+      setError(
+        "Email is required."
       );
+      return;
+    }
 
-      console.log(
-        "UPLOADING PROFILE IMAGE:",
-        selectedImage.name
-      );
+    try {
+      setSaving(true);
 
-      const imageResponse =
-        await api.post(
-          "/user/profile/avatar",
-          formData
+      // ==========================================
+      // 1. UPDATE NAME + EMAIL
+      // ==========================================
+
+      const profileResponse =
+        await api.put(
+          "/user/profile",
+          {
+            name: name.trim(),
+            email: email.trim(),
+          }
         );
 
       console.log(
-        "PROFILE IMAGE RESPONSE:",
-        imageResponse.data
+        "PROFILE UPDATE RESPONSE:",
+        profileResponse.data
       );
+
+      // ==========================================
+      // 2. UPLOAD IMAGE IF SELECTED
+      // ==========================================
+
+      if (selectedImage) {
+        const formData =
+          new FormData();
+
+        formData.append(
+          "profileImage",
+          selectedImage
+        );
+
+        console.log(
+          "UPLOADING PROFILE IMAGE:",
+          selectedImage.name
+        );
+
+        const imageResponse =
+          await api.post(
+            "/user/profile/avatar",
+            formData
+          );
+
+        console.log(
+          "PROFILE IMAGE RESPONSE:",
+          imageResponse.data
+        );
+      }
+
+      // ==========================================
+      // 3. RELOAD PROFILE FROM DATABASE
+      // ==========================================
+
+      const latestResponse =
+        await api.get(
+          "/user/profile"
+        );
+
+      const latestUser:
+        | Profile
+        | undefined =
+        latestResponse.data?.data;
+
+      if (latestUser) {
+        setName(
+          latestUser.name || ""
+        );
+
+        setEmail(
+          latestUser.email || ""
+        );
+
+        const latestImage =
+          getImageUrl(
+            latestUser.profileImage
+          );
+
+        setPreview(
+          latestImage
+            ? `${latestImage}?t=${Date.now()}`
+            : ""
+        );
+      }
+
+      // ==========================================
+      // 4. CLEAR SELECTED IMAGE
+      // ==========================================
+
+      setSelectedImage(null);
+
+      setSuccess(
+        selectedImage
+          ? "Profile and profile picture updated successfully."
+          : "Profile updated successfully."
+      );
+
+    } catch (error: any) {
+      console.error(
+        "SAVE PROFILE ERROR:",
+        error
+      );
+
+      console.error(
+        "STATUS:",
+        error.response?.status
+      );
+
+      console.error(
+        "DATA:",
+        error.response?.data
+      );
+
+      setError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to save profile."
+      );
+
+    } finally {
+      setSaving(false);
     }
+  };
 
-    // ==========================================
-    // 3. RELOAD PROFILE FROM DATABASE
-    // ==========================================
+  // =====================================================
+  // LOADING
+  // =====================================================
 
-    const latestResponse =
-      await api.get(
-        "/user/profile"
-      );
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl p-6 lg:p-8">
+        <div className="flex min-h-[400px] items-center justify-center rounded-3xl border border-slate-100 bg-white shadow-sm">
+          <div className="flex flex-col items-center gap-3 text-slate-500">
+            <Loader2
+              size={32}
+              className="animate-spin text-indigo-600"
+            />
 
-    const latestUser =
-      latestResponse.data?.data;
-
-    if (latestUser) {
-      setProfile(latestUser);
-
-      setName(
-        latestUser.name || ""
-      );
-
-      setEmail(
-        latestUser.email || ""
-      );
-
-      setPreview(
-        getImageUrl(
-          latestUser.profileImage
-        ) +
-          `?t=${Date.now()}`
-      );
-    }
-
-    // ==========================================
-    // 4. CLEAR SELECTED IMAGE
-    // ==========================================
-
-    setSelectedImage(null);
-
-    setSuccess(
-      selectedImage
-        ? "Profile and profile picture updated successfully."
-        : "Profile updated successfully."
+            <p className="text-sm font-medium">
+              Loading profile...
+            </p>
+          </div>
+        </div>
+      </div>
     );
-
-  } catch (error: any) {
-    console.error(
-      "SAVE PROFILE ERROR:",
-      error
-    );
-
-    console.error(
-      "STATUS:",
-      error.response?.status
-    );
-
-    console.error(
-      "DATA:",
-      error.response?.data
-    );
-
-    setError(
-      error.response?.data?.message ||
-        error.message ||
-        "Failed to save profile."
-    );
-  } finally {
-    setSaving(false);
   }
-};
 
   // =====================================================
   // PAGE
@@ -481,6 +516,7 @@ const handleSubmit = async (
         {/* PROFILE IMAGE */}
 
         <div className="-mt-16 px-6 sm:px-8">
+
           <div className="relative h-32 w-32">
 
             <div className="flex h-32 w-32 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-indigo-100 shadow-lg">
@@ -530,6 +566,7 @@ const handleSubmit = async (
             </label>
 
           </div>
+
         </div>
 
         {/* CONTENT */}
@@ -539,6 +576,7 @@ const handleSubmit = async (
           {/* ACCOUNT INFORMATION */}
 
           <div className="mb-8">
+
             <h2 className="text-xl font-bold text-slate-900">
               Account Information
             </h2>
@@ -546,6 +584,7 @@ const handleSubmit = async (
             <p className="mt-1 text-sm text-slate-500">
               Update your personal information.
             </p>
+
           </div>
 
           {/* PROFILE FORM */}
@@ -558,6 +597,7 @@ const handleSubmit = async (
             {/* NAME */}
 
             <div>
+
               <label
                 htmlFor="teacher-name"
                 className="mb-2 block text-sm font-semibold text-slate-700"
@@ -566,6 +606,7 @@ const handleSubmit = async (
               </label>
 
               <div className="relative">
+
                 <User
                   size={18}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -583,12 +624,15 @@ const handleSubmit = async (
                   disabled={saving}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white disabled:opacity-60"
                 />
+
               </div>
+
             </div>
 
             {/* EMAIL */}
 
             <div>
+
               <label
                 htmlFor="teacher-email"
                 className="mb-2 block text-sm font-semibold text-slate-700"
@@ -597,6 +641,7 @@ const handleSubmit = async (
               </label>
 
               <div className="relative">
+
                 <Mail
                   size={18}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -614,12 +659,15 @@ const handleSubmit = async (
                   disabled={saving}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:bg-white disabled:opacity-60"
                 />
+
               </div>
+
             </div>
 
             {/* ROLE */}
 
             <div>
+
               <label className="mb-2 block text-sm font-semibold text-slate-700">
                 Role
               </label>
@@ -627,6 +675,7 @@ const handleSubmit = async (
               <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-indigo-600">
                 Teacher
               </div>
+
             </div>
 
             {/* ACTIONS */}
@@ -636,6 +685,7 @@ const handleSubmit = async (
               {/* IMAGE ACTION */}
 
               <div>
+
                 {selectedImage && (
                   <button
                     type="button"
@@ -652,6 +702,7 @@ const handleSubmit = async (
                           size={17}
                           className="animate-spin"
                         />
+
                         Uploading...
                       </>
                     ) : (
@@ -659,11 +710,13 @@ const handleSubmit = async (
                         <ImageIcon
                           size={17}
                         />
+
                         Upload Photo
                       </>
                     )}
                   </button>
                 )}
+
               </div>
 
               {/* SAVE PROFILE */}
@@ -676,27 +729,34 @@ const handleSubmit = async (
                 }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60 sm:ml-auto"
               >
+
                 {saving ? (
                   <>
                     <Loader2
                       size={17}
                       className="animate-spin"
                     />
+
                     Saving...
                   </>
                 ) : (
                   <>
                     <Save size={17} />
+
                     Save Changes
                   </>
                 )}
+
               </button>
 
             </div>
 
           </form>
+
         </div>
+
       </div>
+
     </div>
   );
 }
