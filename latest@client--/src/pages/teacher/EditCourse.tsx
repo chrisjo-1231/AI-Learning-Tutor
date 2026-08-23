@@ -18,18 +18,9 @@ import {
 
 import api from "../../services/api";
 
-interface Course {
-  id: number;
-  title: string;
-  description: string | null;
-}
-
 export default function EditCourse() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-
-  const [course, setCourse] =
-    useState<Course | null>(null);
 
   const [title, setTitle] =
     useState("");
@@ -87,8 +78,6 @@ export default function EditCourse() {
         );
         return;
       }
-
-      setCourse(courseData);
 
       setTitle(
         courseData.title || ""
