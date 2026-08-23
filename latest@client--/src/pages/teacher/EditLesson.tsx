@@ -18,14 +18,6 @@ import {
 
 import api from "../../services/api";
 
-interface Lesson {
-  id: number;
-  title: string;
-  content: string;
-  order: number;
-  courseId: number;
-}
-
 interface Course {
   id: number;
   title: string;
@@ -37,9 +29,6 @@ export default function EditLesson() {
     useParams();
 
   const navigate = useNavigate();
-
-  const [lesson, setLesson] =
-    useState<Lesson | null>(null);
 
   const [course, setCourse] =
     useState<Course | null>(null);
@@ -103,8 +92,6 @@ export default function EditLesson() {
         return;
       }
 
-      setLesson(lessonData);
-
       setTitle(
         lessonData.title || ""
       );
@@ -117,7 +104,10 @@ export default function EditLesson() {
         String(lessonData.order ?? "")
       );
 
-      // Course information
+      // ======================================
+      // COURSE INFORMATION
+      // ======================================
+
       if (lessonData.course) {
         setCourse(
           lessonData.course
