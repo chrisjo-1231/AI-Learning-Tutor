@@ -34,6 +34,7 @@ import TeacherQuizzes from "./pages/teacher/TeacherQuizzes";
 import CreateQuiz from "./pages/teacher/CreateQuiz";
 import TeacherProfile from "./pages/teacher/TeacherProfile";
 import TeacherStudents from "./pages/teacher/TeacherStudents";
+import ManageQuiz from "./pages/teacher/ManageQuiz";
 function App() {
   return (
     <BrowserRouter>
@@ -134,7 +135,10 @@ function App() {
       <TeacherStudents />
     }
 />
-
+                <Route
+  path="/teacher/quizzes/:quizId"
+  element={<ManageQuiz />}
+/>
               {/* TEACHER COURSES */}
 
               <Route
